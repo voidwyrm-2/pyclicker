@@ -1,3 +1,8 @@
-42
-7
-130
+743:points
+21:pointsMultiplier
+410:pMultiCost
+True:autoclickersUnlocked
+13:autoclickers
+1:autoclickerMultiplier
+430:autoclickerCost
+600:autoclickerinterval
