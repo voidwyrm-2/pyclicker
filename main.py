@@ -28,31 +28,45 @@ def isWithinRange(collideeX: int | float, collideeY: int | float, collidedX: int
 def work(): 'makes the code work'
 
 
-def loadsave(dataindex = 0, type = int, toprint = ''):
+def loadsave(dataindex: int | str, vartype = int, toprint = ''):
     one = "<class '"
     two = "'>"
     with open(SAVEFILE, 'rt') as savein:
         gottensave = savein.read()
         sgsave = gottensave.split('\n')
-        gottendata = sgsave[dataindex].split(':')
+        if type(dataindex) == int or type(dataindex) == bool: gottendata = sgsave[dataindex].split(':')
+        else:
+            for i in range(len(sgsave)):
+                if sgsave[i].split(':')[1] == dataindex:
+                    print(f'"{dataindex}" found in {i}({sgsave[i]})!')
+                    gottendata = sgsave[i].split(':')
+                    dataindex = i
+                    break
+                #print(f'"{dataindex}" not in {i}({sgsave[i]})...')
 
-        if toprint == '': toprint = f'accessed {dataindex}({gottendata[1]}) as {str(type).removeprefix(one).removesuffix(two)}'
-        truedata = type(gottendata[0])
+        if toprint == '': toprint = f'accessed {dataindex}({gottendata[1]}) as {str(vartype).removeprefix(one).removesuffix(two)}'
+        truedata = vartype(gottendata[0])
+
         if gottendata[0].casefold() == 'false': truedata = False
         elif gottendata[0].casefold() == 'true': truedata = True
-        print(toprint + f', with a value of {str(truedata)}')
+
+        print(toprint + f', with a value of {str(truedata)}\n')
         return truedata
 
 if not Path(SAVEFILE).exists():
     print('no savefile detected! creating new...')
-    with open(SAVEFILE, 'xt') as save404: save404.write('''0:points
+    with open(SAVEFILE, 'xt') as save404:
+        save404.write('''0:points
 1:pointsMultiplier
 10:pMultiCost
 false:autoclickersUnlocked
 0:autoclickers
 1:autoclickerMultiplier
 40:autoclickerCost
-1000:autoclickerinterval'''); print('new savefile successfully created')
+600:autoclickerinterval
+20:acMultiCost
+20:acIntervalCost''')
+    print('new savefile successfully created')
 
 
 
@@ -91,6 +105,7 @@ pygame.font.init()
 if LUDICROUSDEBUG: print('loading fonts...')
 mainfont = pygame.font.Font('freesansbold.ttf', 32)
 storefont = pygame.font.Font('freesansbold.ttf', 30)
+smallfont = pygame.font.Font('freesansbold.ttf', 15)
 if LUDICROUSDEBUG: print('fonts loaded!')
 if LUDICROUSDEBUG: print('=====PREINIT LOGS END=====\n\n')
 
@@ -117,37 +132,59 @@ multiplierButtonSize = 50
 clickerButtonX = 100
 clickerButtonY = 340
 clickerButtonSize = 50
+
+clickerMultiButtonX = 59
+clickerMultiButtonY = 387
+clickerMultiButtonSize = clickerButtonSize // 5
+
+clickerIntervalButtonX = 40
+clickerIntervalButtonY = 367
+clickerIntervalButtonSize = clickerButtonSize // 5
 #buttons end
 
 #mouse things
 mouseX = 0
 mouseY = 0
 extraMouseRange = 5
+##buttonpressed bools
 isPressingPoints = False
 isPressingMulti = False
 isPressingClicker = False
+isPressingClickerMulti = False
+isPressingClickerInterval = False
+##buttonpressed bools end
 #mouse things end
 
-
+#button bools
 getPoint = True
-points = 0 + loadsave(0)
-
 getMulti = True
-pointsMultiplier = 0 + loadsave(1)
-pMultiCost = loadsave(2)
-if pointsMultiplier == 0: pointsMultiplier = 1
-
 getClicker = True
-autoclickersUnlocked = loadsave(3, bool)
+getClickerMulti = True
+getClickerInterval = True
+#button bools end
+
+#points
+points = 0 + loadsave('points')
+pointsMultiplier = 0 + loadsave('pointsMultiplier')
+pMultiCost = loadsave('pMultiCost')
+if pointsMultiplier == 0: pointsMultiplier = 1
+#points end
+
+#autoclickers
+autoclickersUnlocked = loadsave('autoclickersUnlocked', bool)
 #print(f'autoclickersUnlocked:{autoclickersUnlocked}')
-autoclickers = 0 + loadsave(4)
-autoclickerMultiplier = 0 + loadsave(5)
-autoclickerCost = 0 + loadsave(6)
-autoclickerinterval = 0 + loadsave(7)
+autoclickers = 0 + loadsave('autoclickers')
+autoclickerMultiplier = 0 + loadsave('autoclickerMultiplier')
+autoclickerCost = 0 + loadsave('autoclickerCost')
+autoclickerinterval = 0 + loadsave('autoclickerinterval')
 autoclickerticker = autoclickerinterval
+autoclickerCost = 0 + loadsave('autoclickerCost')
+acMultiCost = 0 + loadsave('acMultiCost')
+acIntervalCost = 0 + loadsave('acIntervalCost')
 if autoclickerMultiplier == 0: autoclickerMultiplier = 1
 if autoclickersUnlocked == None: autoclickersUnlocked = False
 if pointsMultiplier >= 10: autoclickersUnlocked = True
+#autoclickers end
 
 if LUDICROUSDEBUG: print('all variables loaded!')
 print('====VARIABLE LOG END====')
@@ -163,7 +200,9 @@ def save():
 {autoclickers}:autoclickers
 {autoclickerMultiplier}:autoclickerMultiplier
 {autoclickerCost}:autoclickerCost
-{autoclickerinterval}:autoclickerinterval''')
+{autoclickerinterval}:autoclickerinterval
+{acMultiCost}:acMultiCost
+{acIntervalCost}:acIntervalCost''')
         print('====SAVE LOG====')
         #print(f'saved "points" with a value of {points}')
         #print(f'saved "pointsMultiplier" with a value of {pointsMultiplier}')
@@ -193,9 +232,25 @@ def drawClickerButton(x, y, size):
     shopclicker = storefont.render(f'AC', True, (255, 255, 255))
     screen.blit(shopclicker, (x - 20, y - 13))
 
+def drawClickerMultiButton(x, y, size):
+    pygame.draw.circle(screen, (125, 100, 150), (x, y), size)
+    buttonInnerColor = 200
+    if isPressingClickerMulti: buttonInnerColor -= 100
+    pygame.draw.circle(screen, (buttonInnerColor, buttonInnerColor, buttonInnerColor), (x, y), size - (2 * (size // 10)))
+    #shopclicker = storefont.render(f'AC', True, (255, 255, 255))
+    #screen.blit(shopclicker, (x - 20, y - 13))
+
+def drawClickerIntervalButton(x, y, size):
+    pygame.draw.circle(screen, (125, 100, 150), (x, y), size)
+    buttonInnerColor = 200
+    if isPressingClickerInterval: buttonInnerColor -= 100
+    pygame.draw.circle(screen, (buttonInnerColor, buttonInnerColor, buttonInnerColor), (x, y), size - (2 * (size // 10)))
+    #shopclicker = storefont.render(f'AC', True, (255, 255, 255))
+    #screen.blit(shopclicker, (x - 20, y - 13))
+
 
 def showticks(x, y):
-    tick = mainfont.render(f'tick:{gameticks}', True, (255, 255, 255))
+    tick = smallfont.render(f'tick:{gameticks}', True, (255, 255, 255))
     screen.blit(tick, (x, y))
 
 def showcursorpos(x, y):
@@ -210,13 +265,17 @@ def showShapePos(x, y, Sx, Sy, Si):
 
 def showinfo(x, y):
     global autoclickersUnlocked
-    poi = mainfont.render(f'points: {points}', True, (255, 255, 255))
+    poi = smallfont.render(f'points: {points}', True, (255, 255, 255))
     screen.blit(poi, (x, y))
-    mul = mainfont.render(f'points multiplier(PM): {pointsMultiplier}', True, (255, 255, 255))
+    mul = smallfont.render(f'points multiplier(PM): {pointsMultiplier}', True, (255, 255, 255))
     screen.blit(mul, (x, y + 33))
     if autoclickersUnlocked:
-        aclickers = mainfont.render(f'autoclickers(AC): {autoclickers} AC interval:{autoclickerinterval}', True, (255, 255, 255))
+        aclickers = smallfont.render(f'autoclickers(AC): {autoclickers}', True, (255, 255, 255))
         screen.blit(aclickers, (x, y + 66))
+        aclickersmulti = smallfont.render(f'AC Multiplier: {autoclickerMultiplier}', True, (255, 255, 255))
+        screen.blit(aclickersmulti, (x, y + 101))
+        aclickersmulti = smallfont.render(f'AC interval: {autoclickerinterval}', True, (255, 255, 255))
+        screen.blit(aclickersmulti, (x, y + 136))
 
 
 
@@ -234,6 +293,10 @@ while running:
             #print("you pressed a key")
             if event.key == pygame.K_ESCAPE or event.key == pygame.K_q: print('Game was quit!'); save(); running = False
 
+            if event.key == pygame.K_p: print(f'mouseX:{mouseX},mouseY:{mouseY}')
+
+            if event.key == pygame.K_RETURN: points += 1 * pointsMultiplier
+
         if event.type == pygame.MOUSEBUTTONDOWN:
             if isWithinRange(mouseX, mouseY, pointsButtonX, pointsButtonY, pointsButtonSize - (2 * (pointsButtonSize // 10))):
                 isPressingPoints = True
@@ -248,14 +311,28 @@ while running:
                 isPressingClicker = True
                 if autoclickerCost <= points:
                     if getClicker: autoclickers += 1; points -= autoclickerCost; autoclickerCost += 30; getClicker = False
+                
+            elif isWithinRange(mouseX, mouseY, clickerMultiButtonX, clickerMultiButtonY, clickerMultiButtonSize - (2 * (clickerMultiButtonSize // 10))):
+                isPressingClickerMulti = True
+                if acMultiCost <= points:
+                    if getClickerMulti: autoclickerMultiplier += 1; points -= acMultiCost; acMultiCost += 25; getClickerMulti = False
+
+            elif isWithinRange(mouseX, mouseY, clickerIntervalButtonX, clickerIntervalButtonY, clickerIntervalButtonSize - (2 * (clickerIntervalButtonSize // 10))) and autoclickerinterval > 1:
+                isPressingClickerInterval = True
+                if acIntervalCost <= points:
+                    if getClickerInterval: autoclickerinterval -= 10; points -= acIntervalCost; acIntervalCost += 25; getClickerInterval = False
 
         if event.type == pygame.MOUSEBUTTONUP:
             isPressingPoints = False
             isPressingMulti = False
             isPressingClicker = False
+            isPressingClickerMulti = False
+            isPressingClickerInterval = False
             getPoint = True
             getMulti = True
             getClicker = True
+            getClickerMulti = True
+            getClickerInterval = True
 
     mouseX, mouseY = pygame.mouse.get_pos()
 
@@ -263,14 +340,20 @@ while running:
 
     if autoclickersUnlocked and autoclickers != 0:
         #for i in range(autoclickers):
-            if gameticks == autoclickerticker:
+            #if gameticks > 2 and 
+            if gameticks >= autoclickerticker:
                 points += (1 * autoclickerMultiplier) * autoclickers
                 autoclickerticker += autoclickerinterval
 
+    autoclickerinterval = limitmin(autoclickerinterval, 0)
+
     drawPointsButton(pointsButtonX, pointsButtonY, pointsButtonSize)
     drawMultiplierButton(multiplierButtonX, multiplierButtonY, multiplierButtonSize)
-    if autoclickersUnlocked: drawClickerButton(clickerButtonX, clickerButtonY, clickerButtonSize)
-    showinfo(30, 0)
+    if autoclickersUnlocked:
+        drawClickerButton(clickerButtonX, clickerButtonY, clickerButtonSize)
+        drawClickerMultiButton(clickerMultiButtonX, clickerMultiButtonY, clickerMultiButtonSize)
+        drawClickerIntervalButton(clickerIntervalButtonX, clickerIntervalButtonY, clickerIntervalButtonSize)
+    showinfo(2, 0)
 
     if showTicks: showticks(0, windratio[1] - 60)
     if showCursorPos: showcursorpos(0, 35)
