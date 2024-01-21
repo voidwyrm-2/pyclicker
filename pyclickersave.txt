@@ -1,0 +1,10 @@
+24:points
+10:pointsMultiplier
+190:pMultiCost
+False:autoclickersUnlocked
+0:autoclickers
+1:autoclickerMultiplier
+40:autoclickerCost
+600:autoclickerinterval
+20:acMultiCost
+20:acIntervalCost

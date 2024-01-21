@@ -2,6 +2,7 @@ import pygame
 from random import randint
 import math
 from pathlib import Path
+import os
 
 
 
@@ -9,6 +10,11 @@ LUDICROUSDEBUG = False
 
 
 SAVEFILE = './pyclickersave.txt'
+SAVEFILERESET = './resetsave.txt'
+
+if Path(SAVEFILERESET).exists():
+    os.remove(SAVEFILERESET)
+    os.remove(SAVEFILE)
 
 def limitmax(input, max):
     if input > max: return max
@@ -67,6 +73,9 @@ false:autoclickersUnlocked
 20:acMultiCost
 20:acIntervalCost''')
     print('new savefile successfully created')
+else:
+    print('save file exists, loading data...')
+    print(f'===TO RESET SAVE, PUT A FILE NAMED {SAVEFILERESET} IN THE EXE\'s FOLDER')
 
 
 
@@ -295,7 +304,7 @@ while running:
 
             if event.key == pygame.K_p: print(f'mouseX:{mouseX},mouseY:{mouseY}')
 
-            if event.key == pygame.K_RETURN: points += 1 * pointsMultiplier
+            #if event.key == pygame.K_RETURN: points += 1 * pointsMultiplier
 
         if event.type == pygame.MOUSEBUTTONDOWN:
             if isWithinRange(mouseX, mouseY, pointsButtonX, pointsButtonY, pointsButtonSize - (2 * (pointsButtonSize // 10))):
